@@ -26,8 +26,6 @@ abstract class CommitDistiller[DistilledT](repo: SourceControlledRepo,
 
   def prepareDistill(commitId: String): Unit = {}
 
-  def isWorkingDirectoryAware: Boolean = false
-
   def distillCommit(commitId: String): CommitDistillInfo[DistilledT] = {
 
     val diffs = repo.computeContentDiff(commitId, filenameFilter)
