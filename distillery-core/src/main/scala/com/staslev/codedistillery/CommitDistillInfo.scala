@@ -25,9 +25,6 @@ object CommitDistillInfo {
   type CommitDistillResult[T] = Iterable[(String, ContentDistillResult[T])]
 }
 
-/**
-  * Created by slevin on 9/23/15.
-  */
 case class CommitMetadata(commitId: String,
                           authorName: String,
                           authorEmail: String,

@@ -18,71 +18,24 @@ package com.staslev.codedistillery.distilling.changes.uzh
 import java.io.File
 import java.nio.file.{Path, Paths}
 
-import ch.uzh.ifi.seal.changedistiller.model.entities.SourceCodeChange
 import com.staslev.codedistillery._
 import com.staslev.codedistillery.vcs.GitRepo
 import org.apache.spark.SparkContext
+
+import scala.reflect.ClassTag
 
 object Benchmarks {
 
   private val vcsFactory = GitRepo.apply _
   private val distillerFactory = UzhSourceCodeChangeDistiller.apply _
-  private val encoder = UzhSourceCodeChangeCSVEncoder
+  private val encoderFactory = () => UzhSourceCodeChangeCSVEncoder
 
-  private def distillSequential(repoPath: Path, branch: String, output: Path): Double = {
+  private implicit val model: Parallelism[SparkContext] = LocalSparkParallelism.spark
+
+  private def time(block: => Unit): Double = {
     val start = System.currentTimeMillis()
-    val repo = GitRepo(repoPath)
-    val distiller = distillerFactory.apply(repo)
-    val writer = new DistillOutputWriter(encoder, output)
-
-    // revisions are listed from recent to oldest
-    // skip first commit on account of the big bang theory
-    repo
-      .revisions(branch)
-      .toList
-      .reverse
-      .drop(1)
-      .foreach(revision => writer.write(distiller.distillCommit(revision)))
-
-    writer.close()
-
+    block
     (System.currentTimeMillis() - start) / 1000.toDouble
-  }
-
-  private def distillRevisionParallel(repoPath: Path, branch: String, output: Path)(
-      implicit sparkContext: SparkContext): Double = {
-    val start = System.currentTimeMillis()
-
-    val repo = vcsFactory(repoPath)
-    val pathString = repoPath.toString
-
-    val revisions = repo.revisions(branch).toList.reverse.drop(1)
-
-    // revisions are listed from recent to oldest
-    // skip first commit on account of the big bang theory
-    sparkContext
-      .parallelize(revisions)
-      .flatMap(revision => {
-
-        val repo =
-          RepoPool.getOrCreate(Paths.get(pathString), vcsFactory)
-
-        val distiller =
-          CommitDistillerPool
-            .getOrCreate(repo, distillerFactory)
-            .asInstanceOf[CommitDistiller[SourceCodeChange]]
-
-        encoder.toCSV(distiller.distillCommit(revision))
-      })
-      .saveAsTextFile(output.toString)
-
-    (System.currentTimeMillis() - start) / 1000.toDouble
-  }
-
-  private def distillMultiRepo(repoPath: Path, branch: String, output: Path)(
-      implicit sparkContext: SparkContext): Double = {
-    CodeDistillery(vcsFactory, distillerFactory, encoder)
-      .distill(Set((repoPath, branch)), output)
   }
 
   private def deleteDirectory(directoryToBeDeleted: File): Boolean = {
@@ -92,22 +45,28 @@ object Benchmarks {
 
   def runOn(repoPath: Path, branch: String): Seq[(String, Double)] = {
 
-    import CodeDistillery.localSparkCluster
+    def nameOf[T: ClassTag]: String = implicitly[ClassTag[T]].runtimeClass.getSimpleName
 
-    val distillModes =
-      List(("sequential", distillSequential _),
-           ("singleRepoRevisionParallel", distillRevisionParallel _),
-           ("multiRepoRevisionParallel", distillMultiRepo _))
+    val benchmarks =
+      List(
+        nameOf[SequentialExecution] ->
+          new CodeDistillery(vcsFactory, distillerFactory, encoderFactory) with SequentialExecution,
+        nameOf[RepoLocalRevisionParallelism] ->
+          new CodeDistillery(vcsFactory, distillerFactory, encoderFactory)
+          with RepoLocalRevisionParallelism,
+        nameOf[CrossRepoRevisionParallelism] ->
+          new CodeDistillery(vcsFactory, distillerFactory, encoderFactory)
+          with CrossRepoRevisionParallelism
+      )
 
-    distillModes.map({
-      case (descriptor, distillMethod) => {
+    benchmarks.map({
+      case (descriptor, distillery) =>
         val benchmarkDir = Paths.get(repoPath.toString, "distill-benchmarks")
         benchmarkDir.toFile.mkdir()
         val distillOutput = Paths.get(benchmarkDir.toString, descriptor)
-        val elapsed = distillMethod(repoPath, branch, distillOutput)
+        val elapsed = time(distillery.distill(Set((repoPath, branch)), distillOutput))
         deleteDirectory(benchmarkDir.toFile)
         (descriptor, elapsed)
-      }
     })
   }
 }

@@ -17,9 +17,9 @@
 package com.staslev.codedistillery.distilling.changes.uzh
 
 import ch.uzh.ifi.seal.changedistiller.model.entities.SourceCodeChange
-import com.staslev.codedistillery.{CommitDistillInfo, DistillOutputCSVEncoder}
+import com.staslev.codedistillery.{CommitDistillInfo, DistillInfoCSVEncoder}
 
-object UzhSourceCodeChangeCSVEncoder extends DistillOutputCSVEncoder[SourceCodeChange] {
+object UzhSourceCodeChangeCSVEncoder extends DistillInfoCSVEncoder[SourceCodeChange] {
   import com.staslev.codedistillery.CSVUtils._
   def toCSV(distilled: CommitDistillInfo[SourceCodeChange]): Iterable[String] = {
     distilled

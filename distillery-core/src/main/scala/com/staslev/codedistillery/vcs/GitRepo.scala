@@ -27,6 +27,7 @@ import org.eclipse.jgit.diff.DiffEntry.ChangeType
 import org.eclipse.jgit.diff.RawText
 import org.eclipse.jgit.lib.{AbbreviatedObjectId, ObjectId}
 import org.eclipse.jgit.revwalk.{RevCommit, RevWalk}
+import org.eclipse.jgit.treewalk.CanonicalTreeParser
 
 object GitRepo {
   def apply(path: Path): SourceControlledRepo = {
@@ -53,7 +54,7 @@ class GitRepo private (override val path: Path) extends SourceControlledRepo {
   }
 
   @throws[IOException]
-  private def getCanonicalTreeParser(commitId: ObjectId) = {
+  private def getCanonicalTreeParser(commitId: ObjectId): CanonicalTreeParser = {
     import org.eclipse.jgit.treewalk.CanonicalTreeParser
     val walk = new RevWalk(git.getRepository)
     try {
@@ -85,35 +86,40 @@ class GitRepo private (override val path: Path) extends SourceControlledRepo {
     }
   }
 
-  private def walkRevisionRange[T](
-      fromCommit: RevCommit,
-      toCommit: RevCommit,
-      revWalk: RevWalk = new RevWalk(repo))(f: RevCommit => T): List[T] = {
-    try {
-      revWalk.markStart(fromCommit)
-      revWalk.markUninteresting(toCommit)
-      revWalk.iterator().asScala.map(f).toList
-    } finally {
-      if (revWalk != null) {
-        revWalk.dispose()
+  private def walkRevisionRange[T](since: String, until: String, inclusive: Boolean = false)(
+      f: RevCommit => T): List[T] = {
+
+    val commits =
+      if (until == since) {
+        List(parseCommit(until))
+      } else {
+        // note that addRange has the sig. since, until
+        git.log().addRange(parseCommit(since), parseCommit(until)).call().asScala.iterator
       }
-    }
+
+    commits.map(f).toList
+  }
+
+  private def parseCommit[T](sha1: String): RevCommit = {
+    repo.parseCommit(ObjectId.fromString(sha1))
   }
 
   private def diffsIn(revision: String, filenameFilter: String => Boolean = _ => true)
     : Iterable[((String, AbbreviatedObjectId), (String, AbbreviatedObjectId))] = {
 
-    val newCommit = repo.resolve(revision)
-    val oldCommit = repo.resolve(s"$revision^1")
+    val current = repo.resolve(revision)
+    val parent = repo.resolve(s"$revision^1")
 
-    if (oldCommit == null) {
+    if (parent == null) {
       List()
     } else {
       val diffEntries =
         git
           .diff()
-          .setOldTree(getCanonicalTreeParser(oldCommit))
-          .setNewTree(getCanonicalTreeParser(newCommit))
+          // DAG wise parent <- current
+          // Time wise first there was parent, then there was current
+          .setOldTree(getCanonicalTreeParser(parent))
+          .setNewTree(getCanonicalTreeParser(current))
           .call()
 
       import org.eclipse.jgit.diff.RenameDetector
@@ -129,6 +135,15 @@ class GitRepo private (override val path: Path) extends SourceControlledRepo {
             filenameFilter(oldName) || filenameFilter(newName)
         })
     }
+  }
+
+  override def revisions[T](since: String, until: String): List[String] = {
+    walkRevisionRange(since, until)(_.getName)
+  }
+
+  override def resolveRevision[T](baseCommit: String, revisionsBefore: Int): String = {
+    val fromCommit = parseCommit(baseCommit)
+    git.log().add(fromCommit).setSkip(revisionsBefore).setMaxCount(1).call().asScala.head.getName
   }
 
   override def computeContentDiff(
@@ -180,10 +195,16 @@ class GitRepo private (override val path: Path) extends SourceControlledRepo {
     diffEntries.asScala.map(diff => (diff.getOldPath, diff.getNewPath))
   }
 
-  override def revisions(branch: String, author: String): Iterable[String] = {
+  override def revisionsByAuthor(branch: String, author: String): Iterable[String] = {
     import org.eclipse.jgit.revwalk.filter.AuthorRevFilter
     val authorFilter = AuthorRevFilter.create(author)
-    git.log().setRevFilter(authorFilter).call().asScala.map(_.getName)
+    git
+      .log()
+      .add(repo.resolve(s"remotes/origin/$branch"))
+      .setRevFilter(authorFilter)
+      .call()
+      .asScala
+      .map(_.getName)
   }
 
   override def close(): Unit = {
@@ -197,12 +218,8 @@ class GitRepo private (override val path: Path) extends SourceControlledRepo {
       filenames.exists(filename => postChangeFilenames.exists(_.endsWith(filename)))
     }
 
-    val revWalk = new RevWalk(repo)
-    val toCommit = revWalk.parseCommit(repo.resolve(to))
-    val fromCommit = revWalk.parseCommit(repo.resolve(from))
-
-    hasChangesIn(filenames: _*)(toCommit) ||
-    walkRevisionRange(fromCommit, toCommit, revWalk)(hasChangesIn(filenames: _*)).contains(true)
+    walkRevisionRange(to, from, inclusive = true)(hasChangesIn(filenames: _*))
+      .contains(true)
   }
 
   override def checkout(revision: String, file: Path): Unit = {

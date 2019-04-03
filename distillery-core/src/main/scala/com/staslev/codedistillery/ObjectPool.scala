@@ -22,7 +22,7 @@ trait ObjectPool[KeyT, ValueT] {
   private val instances: AtomicReference[Map[KeyT, ValueT]] =
     new AtomicReference(Map())
 
-  def getOrCreate(key: KeyT, factory: KeyT => ValueT): ValueT = {
+  def getOrCreate(key: KeyT, factory: KeyT => ValueT, executorId: String = ""): ValueT = {
     var stop = false
     var spins = 0
     while (!stop) {

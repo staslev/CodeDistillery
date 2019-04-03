@@ -19,9 +19,10 @@ package com.staslev.codedistillery
 import java.io.{File, FileWriter, PrintWriter}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 
+import com.staslev.codedistillery.CSVUtils.{clean, separator}
 import org.apache.commons.io.FilenameUtils
 
-class DistillOutputWriter[DistilledT](encoder: DistillOutputCSVEncoder[DistilledT],
+class DistillOutputWriter[DistilledT](encoder: DistillInfoCSVEncoder[DistilledT],
                                       outputFile: Path) {
 
   private val tempFilePath =
@@ -35,8 +36,8 @@ class DistillOutputWriter[DistilledT](encoder: DistillOutputCSVEncoder[Distilled
 
   protected val writer: PrintWriter = new PrintWriter(new FileWriter(tempFilePath.toString))
 
-  def write(distilledResult: CommitDistillInfo[DistilledT]): Unit = {
-    encoder.toCSV(distilledResult).foreach(writer.println)
+  def write(distilledResult: CommitDistillInfo[DistilledT], prefix: String = ""): Unit = {
+    s"${clean(prefix)}$separator" + encoder.toCSV(distilledResult).foreach(writer.println)
   }
 
   def flush(): Unit = {

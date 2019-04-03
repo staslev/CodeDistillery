@@ -16,6 +16,6 @@
 
 package com.staslev.codedistillery
 
-trait DistillOutputCSVEncoder[DistilledT] extends Serializable {
+trait DistillInfoCSVEncoder[DistilledT] extends Serializable {
   def toCSV(distilled: CommitDistillInfo[DistilledT]): Iterable[String]
 }

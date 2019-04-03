@@ -33,7 +33,7 @@ object SourceControlledRepo {
         filenameFilter: String => Boolean = _ => true): Iterable[(NamedContent, NamedContent)] =
       List()
 
-    override def revisions(branch: String, author: String): Iterable[String] = List()
+    override def revisionsByAuthor(branch: String, author: String): Iterable[String] = List()
 
     override def close(): Unit = {}
 
@@ -43,6 +43,9 @@ object SourceControlledRepo {
 
     override def checkout(revision: String, file: Path): Unit = {}
 
+    override def revisions[T](since: String, until: String): List[String] = ???
+
+    override def resolveRevision[T](baseCommit: String, revisionsBefore: Int): String = ???
   }
 }
 
@@ -58,7 +61,11 @@ trait SourceControlledRepo {
 
   def revisions(branch: String): Iterable[String]
 
-  def revisions(branch: String, author: String): Iterable[String]
+  def revisionsByAuthor(branch: String, author: String): Iterable[String]
+
+  def revisions[T](since: String, until: String): List[String]
+
+  def resolveRevision[T](baseCommit: String, revisionsBefore: Int): String
 
   def hasChanged(filenames: String*)(from: String, to: String): Boolean
 
