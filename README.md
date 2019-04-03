@@ -119,7 +119,8 @@ The output is a CSV file with a `#` delimiter, consisting of the following field
  15. nonTestFilesInCommit
  16. totalFilesInCommit
  17. commentLength
-  ++ { fine-grained source code change type frequencies }
+
+++ **{ fine-grained source code change type frequencies }**  
 Which is a lexicographically sorted list of fine-grained source code change types. 
 
 The complete list of columns (a.k.a. header line) can be obtained using: `PerCommit.headerLine`.
