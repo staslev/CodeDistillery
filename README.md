@@ -49,21 +49,21 @@ We demonstrate CodeDistillery by providing an out-of-the-box support for mining 
 object Main {  
   
   def main(args: Array[String]): Unit = {  
-  
-    import CodeDistillery.localSparkCluster  
-  
-    val codeDistillery =  
-      CodeDistillery(
-        vcs = GitRepo.apply,  
-        distillerFactory = UzhSemanticChangeDistiller.apply,  
-        encoder = UzhSemanticChangeCSVEncoder)  
+ 
+  val codeDistillery =  
+    new CodeDistillery(
+      vcsFactory = GitRepo.apply,  
+      distillerFactory = UzhSourceCodeChangeDistiller.apply,  
+      encoderFactory = () => UzhSourceCodeChangeCSVEncoder)  
+    with CrossRepoRevisionParallelism
   
     val repoPath = Paths.get("/path/to/my/repo")  
     val output = Paths.get("/path/to/write/output")  
     val branch = "master"
 
-    codeDistillery
-      .distill(Set((repoPath, branch)), output)  
+    import LocalSparkParallelism.spark
+
+    codeDistillery.distill(Set((repoPath, branch)), output)  
  }  
 }
 ```
@@ -85,3 +85,41 @@ The output is a CSV file with a `#` delimiter, consisting of the following field
  11. Unique name of root entity
  12. Commit message
  13. Filename
+
+### Obtaining commit level datasets
+
+The output from the previous stage is a dataset of raw fine-grained source code changes as distilled from a software repository. It is often useful to aggregate this raw dataset into commit level statistics. A commit level dataset can be obtained by performing the following:
+
+```scala
+val input1 :: input2 :: output :: Nil =  
+  List("/path/to/input1", "/path/to/input2", "/path/to/output")  
+ .map(Paths.get(_))
+
+import LocalSparkParallelism.spark
+
+PerCommit.aggregate(Set(input1, input2), output)
+```
+
+The output is a CSV file with a `#` delimiter, consisting of the following fields (in respective order):
+
+ 1. project
+ 2. commitId
+ 3. authorName
+ 4. authorMail
+ 5. date
+ 6. nonTestVersatility
+ 7. comment
+ 8. testCasesAdded
+ 9. testCasesRemoved
+ 10. testCasesChanged
+ 11. testSuitesAdded
+ 12. testSuitesRemoved
+ 13. testSuitesAffected
+ 14. hasIssueRef
+ 15. nonTestFilesInCommit
+ 16. totalFilesInCommit
+ 17. commentLength
+  ++ { fine-grained source code change type frequencies }
+Which is a lexicographically sorted list of fine-grained source code change types. 
+
+The complete list of columns (a.k.a. header line) can be obtained using: `PerCommit.headerLine`.
