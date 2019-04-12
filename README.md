@@ -72,7 +72,7 @@ object Main {
 
 The output is a CSV file with a `#` delimiter, consisting of the following fields (in respective order):
 
- 1. Project name
+ 1. Project Name
  2. Commit Hash
  3. Author Name
  4. Author Email
@@ -102,25 +102,25 @@ PerCommit.aggregate(Set(input1, input2), output)
 
 The output is a CSV file with a `#` delimiter, consisting of the following fields (in respective order):
 
- 1. project
- 2. commitId
- 3. authorName
- 4. authorMail
- 5. date
- 6. nonTestVersatility
- 7. comment
- 8. testCasesAdded
- 9. testCasesRemoved
- 10. testCasesChanged
- 11. testSuitesAdded
- 12. testSuitesRemoved
- 13. testSuitesAffected
- 14. hasIssueRef
- 15. nonTestFilesInCommit
- 16. totalFilesInCommit
- 17. commentLength
-
-++ **{ fine-grained source code change type frequencies }**  
-Which is a lexicographically sorted list of fine-grained source code change types. 
+ 1. Project
+ 2. Commit Hash
+ 3. Author Name
+ 4. Author Mail
+ 5. Date
+ 6. Non Test Versatility
+ 7. Comment
+ 8. Test Cases Added
+ 9. Test Cases Removed
+ 10. Test Cases Changed
+ 11. Test Suites Added
+ 12. Test Suites Removed
+ 13. Test Suites Affected
+ 14. Has Issue Ref
+ 15. Non Test Files in commit
+ 16. Total Files in commit
+ 17. Comment Length
+ 
+     ++ { fine-grained source code change type frequencies }
+    Which is a lexicographically sorted list of fine-grained source code change types. 
 
 The complete list of columns (a.k.a. header line) can be obtained using: `PerCommit.headerLine`.
