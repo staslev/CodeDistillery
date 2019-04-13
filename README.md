@@ -72,10 +72,10 @@ object Main {
 
 The output is a CSV file with a `#` delimiter, consisting of the following fields (in respective order):
 
- 1. Project Name
- 2. Commit Hash
- 3. Author Name
- 4. Author Email
+ 1. Project name
+ 2. Commit hash
+ 3. Author name
+ 4. Author email
  5. [Fine-grained change type](https://bitbucket.org/sealuzh/tools-changedistiller/src/feee5be3724a3eabfb7c415554cb26f2258a65f4/src/main/java/ch/uzh/ifi/seal/changedistiller/model/classifiers/ChangeType.java?at=master#lines-52:99)
  6. Unique name of changed entity
  7. [Significance level](https://bitbucket.org/sealuzh/tools-changedistiller/src/feee5be3724a3eabfb7c415554cb26f2258a65f4/src/main/java/ch/uzh/ifi/seal/changedistiller/model/classifiers/SignificanceLevel.java?at=master#lines-52:56)
@@ -102,23 +102,23 @@ PerCommit.aggregate(Set(input1, input2), output)
 
 The output is a CSV file with a `#` delimiter, consisting of the following fields (in respective order):
 
- 1. Project
- 2. Commit Hash
- 3. Author Name
- 4. Author Mail
+ 1. Project name
+ 2. Commit hash
+ 3. Author name
+ 4. Author mail
  5. Date
- 6. Non Test Versatility
- 7. Comment
- 8. Test Cases Added
- 9. Test Cases Removed
- 10. Test Cases Changed
- 11. Test Suites Added
- 12. Test Suites Removed
- 13. Test Suites Affected
- 14. Has Issue Ref
- 15. Non Test Files in commit
- 16. Total Files in commit
- 17. Comment Length
+ 6. Non test versatility
+ 7. Commit message
+ 8. Test cases added
+ 9. Test cases removed
+ 10. Test cases changed
+ 11. Test suites added
+ 12. Test suites removed
+ 13. Test suites affected
+ 14. Has issue ref
+ 15. Non test files in commit
+ 16. Total files in commit
+ 17. Commit message length
  
      ++ { fine-grained source code change type frequencies }
     Which is a lexicographically sorted list of fine-grained source code change types. 

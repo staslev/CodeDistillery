@@ -111,7 +111,7 @@ trait InterRepoParallelism extends ExecutionModel[SparkContext] {
 /**
   * An execution model where repositories are processed sequentially, but the revisions of each
   * repository are processed in parallel. This execution model clones the repository being
-  * processed is cloned per core, and assigns it a range of revisions, representing its slice
+  * processed per core, and assigns it a range of revisions, representing its slice
   * of the entire revisions history (of the repository currently being processed).
   */
 trait RepoCloningLocalRevisionParallel extends ExecutionModel[SparkContext] {
