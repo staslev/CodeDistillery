@@ -24,6 +24,13 @@ cd CodeDistillery
 mvn clean install  
 ```
 
+The project was tested and developed using JDK 8. 
+If you have multiple JDKs installed, make sure maven uses JDK 8 when executing `mvn clean install`. 
+This can be done using the following command: 
+```
+export JAVA_HOME=/my_jdk1.8/Contents/Home && mvn clean install
+```
+
 ### Setting up Maven dependencies
 
   
